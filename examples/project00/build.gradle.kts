@@ -33,7 +33,7 @@ tasks.named<Test>("test") {
 }
 
 application {
-    mainClass = "fr.ubordeaux.ao.project00.Main"
+    mainClass.set("fr.ubordeaux.ao.project00.Main")
 }
 
 idea {
