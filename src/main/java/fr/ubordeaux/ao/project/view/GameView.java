@@ -23,15 +23,17 @@ public class GameView {
         int width = game.getMaze().getTotalWidth();
         int height = game.getMaze().getTotalHeight();
 
-        // Dessiner le sol ET les murs
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
-                if (game.getMaze().isWall(x, y)) {
-                    // Mur : code 100 = mur simple
-                    window.add(100, x, y, 0);
+                int code = game.getMaze().getTileCode(x, y);
+
+                if (code >= 100) {
+                    // C'est un mur - afficher le mur
+                    window.add(code, x, y, 0);
                 } else {
-                    // Sol : code 1 = dalle
-                    window.add(1, x, y, 0);
+                    // C'est du sol - effet damier
+                    int floorCode = ((x + y) % 2 == 0) ? 0 : 1;
+                    window.add(floorCode, x, y, 0);
                 }
             }
         }
