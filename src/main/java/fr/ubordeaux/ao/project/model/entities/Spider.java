@@ -20,7 +20,9 @@ public class Spider {
         this.position = newPosition;
     }
 
-    // Déplacement aléatoire
+    /**
+     * Retourne une position aléatoire autour de l'araignée
+     */
     public Position getRandomMove() {
         int direction = random.nextInt(4);
         float newX = position.getX();

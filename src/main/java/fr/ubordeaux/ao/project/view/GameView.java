@@ -6,6 +6,7 @@ import fr.ubordeaux.ao.mazing.api.Crusader;
 import fr.ubordeaux.ao.project.model.Game;
 import fr.ubordeaux.ao.project.model.items.Item;
 
+
 public class GameView {
     private IWindowGame window;
     private Game game;
