@@ -1,4 +1,4 @@
-package fr.ubordeaux.ao.project.model.states;
+/*package fr.ubordeaux.ao.project.model.states;
 
 
 
@@ -30,4 +30,4 @@ public class GameOverState implements GameState {
     public String getName() {
         return "GAME_OVER";
     }
-}
+}*/

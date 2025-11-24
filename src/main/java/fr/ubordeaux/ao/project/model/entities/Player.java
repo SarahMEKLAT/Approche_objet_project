@@ -1,6 +1,5 @@
 package fr.ubordeaux.ao.project.model.entities;
 
-
 import fr.ubordeaux.ao.project.model.maze.Position;
 import fr.ubordeaux.ao.mazing.api.Crusader;
 import java.util.Observable;
@@ -51,6 +50,16 @@ public class Player extends Observable {
     public int getKeyFragments() { return keyFragments; }
     public boolean isDead() { return entity.isDead(); }
     public Crusader getCrusader() { return crusader; }
+
+    /**
+     * Définit la position du joueur (NOUVELLE MÉTHODE)
+     */
+    public void setPosition(Position newPosition) {
+        entity.setPosition(newPosition);
+        crusader.setPosition(newPosition.getX(), newPosition.getY(), newPosition.getZ());
+        setChanged();
+        notifyObservers();
+    }
 
     /**
      * Déplace le joueur

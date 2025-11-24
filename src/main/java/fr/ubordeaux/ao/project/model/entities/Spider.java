@@ -1,26 +1,38 @@
 package fr.ubordeaux.ao.project.model.entities;
 
-
-
 import fr.ubordeaux.ao.project.model.maze.Position;
+import java.util.Random;
 
-/**
- * Représente une araignée ennemie
- */
-public class Spider extends LivingEntity {
-    private static final int MAX_HEALTH = 50;
+public class Spider {
+    private Position position;
+    private Random random;
 
-    public Spider(Position position) {
-        super(position, MAX_HEALTH);
+    public Spider(float x, float y, float z) {
+        this.position = new Position(x, y, z);
+        this.random = new Random();
     }
 
-    @Override
-    protected void onDeath() {
-        System.out.println("Une araignée est morte!");
+    public Position getPosition() {
+        return position;
     }
 
-    @Override
-    public void update(float deltaTime) {
-        // TODO: IA
+    public void setPosition(Position newPosition) {
+        this.position = newPosition;
+    }
+
+    // Déplacement aléatoire
+    public Position getRandomMove() {
+        int direction = random.nextInt(4);
+        float newX = position.getX();
+        float newY = position.getY();
+
+        switch (direction) {
+            case 0 -> newX++; // Droite
+            case 1 -> newX--; // Gauche
+            case 2 -> newY++; // Bas
+            case 3 -> newY--; // Haut
+        }
+
+        return new Position(newX, newY, position.getZ());
     }
 }

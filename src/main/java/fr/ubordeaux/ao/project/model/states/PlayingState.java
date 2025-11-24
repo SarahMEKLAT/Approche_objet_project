@@ -6,7 +6,7 @@ import fr.ubordeaux.ao.project.model.Game;
 
 /**
  * État quand le jeu est en cours
- */
+
 public class PlayingState implements GameState {
     private Game game;
 
@@ -43,3 +43,4 @@ public class PlayingState implements GameState {
         return "PLAYING";
     }
 }
+ */

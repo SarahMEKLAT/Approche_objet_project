@@ -1,79 +1,72 @@
 package fr.ubordeaux.ao.project.controller;
 
-
-
 import fr.ubordeaux.ao.project.model.Game;
 import fr.ubordeaux.ao.project.view.GameView;
 
-import javax.swing.Timer;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 
-/**
- * Contrôleur principal du jeu (Pattern: MVC)
- */
-public class GameController {
+public class GameController implements KeyListener {
     private Game game;
     private GameView view;
-    private KeyboardController keyboardController;
-
-    private Timer gameLoop;
-    private static final int FPS = 50;
-    private long lastUpdateTime;
 
     public GameController(Game game, GameView view) {
         this.game = game;
         this.view = view;
-        this.lastUpdateTime = System.currentTimeMillis();
     }
 
-    /**
-     * Démarre le jeu
-     */
     public void start() {
-        System.out.println("=== Démarrage du contrôleur ===");
+        // Ajouter le KeyListener à la fenêtre
+        ((javax.swing.JFrame) view.getWindow()).addKeyListener(this);
+        ((javax.swing.JFrame) view.getWindow()).setFocusable(true);
 
-        // Initialiser la vue
-        view.initialize(game);
+        System.out.println("Contrôleur démarré. Utilisez les flèches pour bouger.");
 
-        // Initialiser le contrôleur clavier
-        keyboardController = new KeyboardController(game, view.getWindow());
-
-        // Démarrer une nouvelle partie
-        game.startNewGame();
-
-        // Afficher la scène
-        view.render();
-        view.show();
-
-        // Démarrer la boucle de jeu
-        startGameLoop();
+        // Boucle de déplacement de l'araignée
+        new Thread(() -> {
+            while (true) {
+                try {
+                    Thread.sleep(1000); // Déplacer l'araignée toutes les secondes
+                    game.moveSpider();
+                    view.updateSpiderView();
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        }).start();
     }
 
-    /**
-     * Démarre la boucle de mise à jour
-     */
-    private void startGameLoop() {
-        gameLoop = new Timer(1000 / FPS, e -> {
-            long currentTime = System.currentTimeMillis();
-            float deltaTime = (currentTime - lastUpdateTime) / 1000.0f;
-            lastUpdateTime = currentTime;
+    @Override
+    public void keyPressed(KeyEvent e) {
+        boolean moved = false;
 
-            // Mettre à jour le modèle
-            game.update(deltaTime);
-
-            // Pas besoin de re-render à chaque frame pour l'instant
-        });
-
-        gameLoop.start();
-        System.out.println("Boucle de jeu démarrée (" + FPS + " FPS)");
-    }
-
-    /**
-     * Arrête le jeu
-     */
-    public void stop() {
-        if (gameLoop != null) {
-            gameLoop.stop();
+        switch (e.getKeyCode()) {
+            case KeyEvent.VK_UP:
+                moved = game.movePlayer(0, -1);
+                break;
+            case KeyEvent.VK_DOWN:
+                moved = game.movePlayer(0, 1);
+                break;
+            case KeyEvent.VK_LEFT:
+                moved = game.movePlayer(-1, 0);
+                break;
+            case KeyEvent.VK_RIGHT:
+                moved = game.movePlayer(1, 0);
+                break;
         }
-        System.out.println("Jeu arrêté");
+
+        if (moved) {
+            view.updatePlayerView();
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        // Non utilisé
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+        // Non utilisé
     }
 }

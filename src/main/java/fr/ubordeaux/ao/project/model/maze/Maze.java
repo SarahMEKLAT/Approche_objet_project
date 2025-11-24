@@ -1,20 +1,28 @@
 package fr.ubordeaux.ao.project.model.maze;
 
+import fr.ubordeaux.ao.project.model.items.Item;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Random;
+
 public class Maze {
     private int width;
     private int height;
     private static final int ROOM_SIZE = 5;
     private int[][] tiles;
+    private List<Item> items;
+    private Random random;
 
     public Maze(int width, int height) {
         this.width = width;
         this.height = height;
+        this.random = new Random();
+        this.items = new ArrayList<>();
 
         int totalWidth = width * ROOM_SIZE;
         int totalHeight = height * ROOM_SIZE;
         this.tiles = new int[totalWidth][totalHeight];
 
-        // Remplir avec du sol par défaut
         for (int x = 0; x < totalWidth; x++) {
             for (int y = 0; y < totalHeight; y++) {
                 tiles[x][y] = 0;
@@ -22,6 +30,7 @@ public class Maze {
         }
 
         generateRooms();
+        placeItems(); // Nouvelle méthode
 
         System.out.println("Labyrinthe créé: " + width + "x" + height + " salles");
     }
@@ -47,7 +56,7 @@ public class Maze {
             tiles[totalWidth - 1][y] = 111;
         }
 
-        // Murs verticaux entre salles (avec portes)
+        // Murs verticaux entre salles
         for (int roomX = 1; roomX < width; roomX++) {
             int wallX = roomX * ROOM_SIZE;
             for (int y = 1; y < totalHeight - 1; y++) {
@@ -62,13 +71,12 @@ public class Maze {
             }
         }
 
-        // Murs horizontaux entre salles (avec portes) - SANS toucher aux murs verticaux
+        // Murs horizontaux entre salles
         for (int roomY = 1; roomY < height; roomY++) {
             int wallY = roomY * ROOM_SIZE;
             for (int x = 1; x < totalWidth - 1; x++) {
-                // Ne pas écraser les murs verticaux existants
                 if (tiles[x][wallY] == 108 || tiles[x][wallY] == 112) {
-                    continue; // Sauter cette case
+                    continue;
                 }
 
                 int roomX = x / ROOM_SIZE;
@@ -82,12 +90,72 @@ public class Maze {
             }
         }
 
-        // 4 COINS extérieurs
+        // 4 COINS
         tiles[0][0] = 138;
         tiles[totalWidth - 1][0] = 139;
         tiles[0][totalHeight - 1] = 136;
         tiles[totalWidth - 1][totalHeight - 1] = 137;
     }
+
+    /**
+     * Place des objets décoratifs dans chaque salle
+     */
+    private void placeItems() {
+        // Objets disponibles (Table 500 du PDF)
+        int[] objectCodes = {
+                520,  // Coffre
+                544,  // Table
+                527,  // Banc
+                528   // Chaise
+        };
+
+        // Garder trace des positions occupées
+        List<String> occupiedPositions = new ArrayList<>();
+
+        // Placer 1-2 objets par salle seulement
+        for (int roomX = 0; roomX < width; roomX++) {
+            for (int roomY = 0; roomY < height; roomY++) {
+                int numObjects = 1 + random.nextInt(2); // 1 ou 2 objets
+
+                for (int i = 0; i < numObjects; i++) {
+                    // Position aléatoire dans la salle (éviter les bords)
+                    int x = roomX * ROOM_SIZE + 2 + random.nextInt(2);
+                    int y = roomY * ROOM_SIZE + 2 + random.nextInt(2);
+
+                    String posKey = x + "," + y;
+
+                    // Éviter de placer 2 objets au même endroit
+                    if (occupiedPositions.contains(posKey)) {
+                        continue;
+                    }
+
+                    occupiedPositions.add(posKey);
+
+                    // Choisir un objet aléatoire
+                    int code = objectCodes[random.nextInt(objectCodes.length)];
+
+                    Position pos = new Position(x, y, 0);
+                    items.add(new Item(pos, code, getItemType(code)));
+                }
+            }
+        }
+
+        System.out.println("Objets placés: " + items.size());
+    }
+
+    private String getItemType(int code) {
+        return switch (code) {
+            case 520 -> "CHEST";
+            case 544 -> "TABLE";
+            case 527, 528 -> "FURNITURE";
+            default -> "DECORATION";
+        };
+    }
+
+    public List<Item> getItems() {
+        return items;
+    }
+
     public int getWidth() { return width; }
     public int getHeight() { return height; }
     public int getRoomSize() { return ROOM_SIZE; }
@@ -118,7 +186,6 @@ public class Maze {
             return true;
         }
         int code = tiles[x][y];
-        // Portes = passages autorisés
         if (code == 112 || code == 113) {
             return false;
         }
