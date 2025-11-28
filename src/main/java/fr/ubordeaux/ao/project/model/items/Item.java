@@ -4,8 +4,8 @@ import fr.ubordeaux.ao.project.model.maze.Position;
 
 public class Item {
     private Position position;
-    private int code; // Code graphique de l'objet
-    private String type; // "CHEST", "TABLE", "BARREL", etc.
+    private int code;
+    private String type;
 
     public Item(Position position, int code, String type) {
         this.position = position;
@@ -13,15 +13,7 @@ public class Item {
         this.type = type;
     }
 
-    public Position getPosition() {
-        return position;
-    }
-
-    public int getCode() {
-        return code;
-    }
-
-    public String getType() {
-        return type;
-    }
+    public Position getPosition() { return position; }
+    public int getCode() { return code; }
+    public String getType() { return type; }
 }
