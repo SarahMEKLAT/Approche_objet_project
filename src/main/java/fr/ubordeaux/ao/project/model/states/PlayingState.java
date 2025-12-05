@@ -25,7 +25,8 @@ public class PlayingState implements GameState {
             game.getPlayer().update(deltaTime);
         }
 
-        // TODO: Mise à jour des araignées (plus tard)
+        // Mise à jour des araignées (déjà géré par le thread dans GameController)
+        // On ne l'appelle PAS ici pour éviter la double mise à jour
 
         // Vérifier les conditions de fin
         game.checkVictoryCondition();

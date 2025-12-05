@@ -52,7 +52,7 @@ public class Player extends Observable {
     public Crusader getCrusader() { return crusader; }
 
     /**
-     * Définit la position du joueur (NOUVELLE MÉTHODE)
+     * Définit la position du joueur
      */
     public void setPosition(Position newPosition) {
         entity.setPosition(newPosition);
@@ -97,8 +97,19 @@ public class Player extends Observable {
             isAttacking = true;
             stamina -= 20;
             crusader.setMode(Crusader.Mode.ATTACK);
-            // TODO: Détection collision avec ennemis
         }
+    }
+
+    /**
+     * Reçoit des dégâts
+     */
+    public void takeDamage(int damage) {
+        entity.takeDamage(damage);
+        crusader.setMode(Crusader.Mode.GOTHIT);
+        System.out.println("💔 Joueur blessé ! PV: " + getHealth() + "/" + MAX_HEALTH);
+
+        setChanged();
+        notifyObservers("HEALTH_CHANGED");
     }
 
     /**
@@ -158,7 +169,7 @@ public class Player extends Observable {
         @Override
         protected void onDeath() {
             crusader.setMode(Crusader.Mode.DEATH);
-            System.out.println("Player died!");
+            System.out.println("💀 Player died!");
         }
 
         @Override

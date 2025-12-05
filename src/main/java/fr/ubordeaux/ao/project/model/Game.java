@@ -5,16 +5,18 @@ import fr.ubordeaux.ao.project.model.maze.Position;
 import fr.ubordeaux.ao.project.model.entities.Player;
 import fr.ubordeaux.ao.project.model.entities.Spider;
 import fr.ubordeaux.ao.project.model.states.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * Classe principale du jeu
- * Gère le labyrinthe, le joueur, les ennemis et les états
- * Pattern: State (pour gérer les différents états du jeu)
+ * Pattern: State
  */
 public class Game {
     private Maze maze;
     private Player player;
-    private Spider spider;
+    private List<Spider> spiders;
     private int score;
 
     // Pattern State
@@ -26,24 +28,18 @@ public class Game {
 
     public Game() {
         this.score = 0;
+        this.spiders = new ArrayList<>();
 
-        // Initialiser les états
         this.menuState = new MenuState(this);
         this.playingState = new PlayingState(this);
         this.victoryState = new VictoryState(this);
         this.gameOverState = new GameOverState(this);
 
-        // Commencer au menu
         changeState(menuState);
-
-        // Initialiser directement le jeu (pour le test)
         initialize();
         changeState(playingState);
     }
 
-    /**
-     * Change l'état du jeu (Pattern State)
-     */
     public void changeState(GameState newState) {
         if (currentState != null) {
             currentState.exit();
@@ -52,40 +48,54 @@ public class Game {
         currentState.enter();
     }
 
-    /**
-     * Initialise une nouvelle partie
-     */
     public void initialize() {
-        // Créer le labyrinthe
         maze = new Maze();
-
-        // Créer le joueur au centre
         Position startPos = maze.getStartPosition();
         player = new Player(startPos);
-
-        // Créer l'araignée dans un coin (pour le test)
-        Position spiderPos = new Position(3, 3, 0);
-        spider = new Spider(spiderPos.getX(), spiderPos.getY(), spiderPos.getZ());
+        spiders.clear();
+        spawnSpiders();
 
         System.out.println("Jeu initialisé !");
         System.out.println("Joueur en : " + startPos);
-        System.out.println("Araignée en : " + spiderPos);
+        System.out.println("Nombre d'araignées : " + spiders.size());
     }
 
-    /**
-     * Redémarre le jeu
-     */
+    private void spawnSpiders() {
+        spiders.add(new Spider(
+                maze.getPositionInRoom(Maze.NORTH_ROOM).getX() + 2,
+                maze.getPositionInRoom(Maze.NORTH_ROOM).getY() + 2, 0));
+        spiders.add(new Spider(
+                maze.getPositionInRoom(Maze.NORTH_ROOM).getX() - 2,
+                maze.getPositionInRoom(Maze.NORTH_ROOM).getY() - 2, 0));
+        spiders.add(new Spider(
+                maze.getPositionInRoom(Maze.EAST_ROOM).getX() + 3,
+                maze.getPositionInRoom(Maze.EAST_ROOM).getY(), 0));
+        spiders.add(new Spider(
+                maze.getPositionInRoom(Maze.EAST_ROOM).getX() - 3,
+                maze.getPositionInRoom(Maze.EAST_ROOM).getY(), 0));
+        spiders.add(new Spider(
+                maze.getPositionInRoom(Maze.WEST_ROOM).getX(),
+                maze.getPositionInRoom(Maze.WEST_ROOM).getY() + 3, 0));
+        spiders.add(new Spider(
+                maze.getPositionInRoom(Maze.SOUTH_ROOM).getX(),
+                maze.getPositionInRoom(Maze.SOUTH_ROOM).getY() + 2, 0));
+        spiders.add(new Spider(
+                maze.getPositionInRoom(Maze.SOUTH_ROOM).getX() + 2,
+                maze.getPositionInRoom(Maze.SOUTH_ROOM).getY() - 2, 0));
+        spiders.add(new Spider(
+                maze.getPositionInRoom(Maze.SOUTH_ROOM).getX() - 2,
+                maze.getPositionInRoom(Maze.SOUTH_ROOM).getY() - 2, 0));
+
+        System.out.println("🕷️ " + spiders.size() + " araignées spawned");
+    }
+
     public void restart() {
         score = 0;
         initialize();
         changeState(playingState);
     }
 
-    /**
-     * Déplace le joueur
-     */
     public boolean movePlayer(int dx, int dy) {
-        // Ne pas bouger si pas en jeu
         if (!(currentState instanceof PlayingState)) {
             return false;
         }
@@ -97,52 +107,63 @@ public class Game {
                 currentPos.getZ()
         );
 
-        // Vérifier collision
         if (maze.isInBounds(newPos) && !maze.isWall(newPos)) {
             player.move(newPos);
-            System.out.println("Joueur déplacé vers : " + newPos);
             return true;
         }
-
-        System.out.println("Mouvement bloqué (mur)");
         return false;
     }
 
-    /**
-     * Déplace l'araignée aléatoirement
-     */
-    public void moveSpider() {
-        Position newPos = spider.getRandomMove();
+    public void updateSpiders(float deltaTime) {
+        if (!(currentState instanceof PlayingState)) {
+            return;
+        }
 
-        // Vérifier collision
-        if (maze.isInBounds(newPos) && !maze.isWall(newPos)) {
-            spider.setPosition(newPos);
-            System.out.println("Araignée déplacée vers : " + newPos);
+        Position playerPos = player.getPosition();
+        Iterator<Spider> iterator = spiders.iterator();
+
+        while (iterator.hasNext()) {
+            Spider spider = iterator.next();
+            if (spider.isDead()) continue;
+
+            if (spider.canAttack(playerPos)) {
+                int damage = spider.attack();
+                player.takeDamage(damage);
+            }
+
+            float distance = spider.getPosition().distanceTo(playerPos);
+            Position newPos;
+
+            if (distance < 7.0f) {
+                newPos = spider.moveTowards(playerPos);
+            } else {
+                newPos = spider.getRandomMove();
+            }
+
+            if (maze.isInBounds(newPos) && !maze.isWall(newPos)) {
+                spider.setPosition(newPos);
+            }
         }
     }
 
     /**
-     * Vérifie si le joueur a gagné
-     * Pour l'instant : arriver à la salle Sud (room 4)
+     * ✨ Victoire AUTOMATIQUE : s'approcher de la porte suffit !
      */
     public void checkVictoryCondition() {
         if (!(currentState instanceof PlayingState)) {
             return;
         }
 
-        Position playerPos = player.getPosition();
-        Position southRoom = maze.getPositionInRoom(Maze.SOUTH_ROOM);
-
-        // Si le joueur est dans la salle Sud (approximation)
-        if (Math.abs(playerPos.getX() - southRoom.getX()) < 3 &&
-                Math.abs(playerPos.getY() - southRoom.getY()) < 3) {
-            changeState(victoryState);
+        // Vérifier si le joueur est proche de la porte
+        if (maze.isAtExitDoor(player.getPosition())) {
+            // Essayer d'ouvrir la porte (automatique, pas besoin de touche E)
+            if (maze.getExitDoor().tryOpen(player.getKeyFragments())) {
+                System.out.println("🚪 Vous avez atteint la porte de sortie !");
+                changeState(victoryState);
+            }
         }
     }
 
-    /**
-     * Vérifie si le joueur a perdu
-     */
     public void checkGameOverCondition() {
         if (!(currentState instanceof PlayingState)) {
             return;
@@ -153,31 +174,39 @@ public class Game {
         }
     }
 
-    /**
-     * Mise à jour du jeu (appelé chaque frame)
-     */
     public void update(float deltaTime) {
         if (currentState != null) {
             currentState.update(deltaTime);
         }
     }
 
-    /**
-     * Ajoute des points au score
-     */
     public void addScore(int points) {
         score += points;
-        System.out.println("Score : " + score);
     }
 
-    // Getters
+    public Spider getClosestSpider(Position pos, float maxDistance) {
+        Spider closest = null;
+        float minDistance = maxDistance;
+
+        for (Spider spider : spiders) {
+            if (spider.isDead()) continue;
+
+            float distance = spider.getPosition().distanceTo(pos);
+            if (distance < minDistance) {
+                minDistance = distance;
+                closest = spider;
+            }
+        }
+
+        return closest;
+    }
+
     public Maze getMaze() { return maze; }
     public Player getPlayer() { return player; }
-    public Spider getSpider() { return spider; }
+    public List<Spider> getSpiders() { return spiders; }
     public int getScore() { return score; }
     public GameState getCurrentState() { return currentState; }
 
-    // Vérifications d'état
     public boolean isGameOver() { return currentState instanceof GameOverState; }
     public boolean isVictory() { return currentState instanceof VictoryState; }
     public boolean isPlaying() { return currentState instanceof PlayingState; }

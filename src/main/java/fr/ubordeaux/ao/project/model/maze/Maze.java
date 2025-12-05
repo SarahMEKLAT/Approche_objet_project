@@ -1,6 +1,7 @@
 package fr.ubordeaux.ao.project.model.maze;
 
 import fr.ubordeaux.ao.project.model.items.Item;
+import fr.ubordeaux.ao.project.model.items.Door;
 import fr.ubordeaux.ao.mazing.api.IWindowGame;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +19,9 @@ public class Maze {
     private int totalWidth;
     private int totalHeight;
     private List<Item> items;
+
+    // ✨ Porte de sortie (objet Door)
+    private Door exitDoor;
 
     // Taille d'une salle (10x10)
     private static final int ROOM_SIZE = 10;
@@ -40,7 +44,6 @@ public class Maze {
     private static final int DOOR_N = 114;      // Porte verticale
     private static final int DOOR_W = 112;
     private static final int DOOR_E = 115;      // Porte verticale
-
 
     // Positions des salles
     private int centerX, centerY;
@@ -71,7 +74,17 @@ public class Maze {
         this.totalHeight = ROOM_SIZE * 3 + 2;
         this.items = new ArrayList<>();
 
+        // ✨ Créer la porte de sortie au fond de la salle Sud
+        Position exitPos = new Position(
+                southX + ROOM_SIZE / 2,      // Centre horizontal de la salle Sud
+                southY + ROOM_SIZE - 1,      // Mur du fond de la salle Sud
+                0
+        );
+        exitDoor = new Door(exitPos);
+        exitDoor.setRequiredFragments(0); // Pas de fragments requis pour l'instant
+
         System.out.println("Labyrinthe créé : " + totalWidth + "x" + totalHeight + " tuiles");
+        System.out.println("🚪 Porte de sortie placée en : " + exitPos);
     }
 
     /**
@@ -108,6 +121,13 @@ public class Maze {
 
         // 4. AJOUTER LES MURS DES COULOIRS
         createCorridorWalls(window);
+
+        // ✨ 5. PLACER LA PORTE DE SORTIE (utilise le code de la classe Door)
+        Position doorPos = exitDoor.getPosition();
+        window.add(exitDoor.getCode(),
+                (int)doorPos.getX(),
+                (int)doorPos.getY(),
+                (int)doorPos.getZ());
     }
 
     /**
@@ -225,9 +245,6 @@ public class Maze {
                 isInRoom(x, y, westX, westY) ||
                 isInRoom(x, y, eastX, eastY)) {
 
-            // Dans une salle : vérifier si c'est un bord (= mur potentiel)
-            // Pour l'instant, on considère que l'intérieur est walkable
-            // et les bords avec portes sont gérés
             return isBorder(x, y);
         }
 
@@ -246,9 +263,6 @@ public class Maze {
     }
 
     private boolean isBorder(int x, int y) {
-        // Logique simplifiée : l'intérieur des salles est walkable
-        // Les bords sont des murs SAUF aux portes
-        // Pour l'instant on dit que tout l'intérieur est OK
         return false;
     }
 
@@ -286,6 +300,11 @@ public class Maze {
         return isInBounds((int)pos.getX(), (int)pos.getY());
     }
 
+    // ✨ Vérifie si le joueur est à la porte de sortie (utilise la méthode de Door)
+    public boolean isAtExitDoor(Position playerPos) {
+        return exitDoor.getPosition().distanceTo(playerPos) < 0.5f;
+    }
+
     /**
      * Position de départ (centre de la salle centrale)
      */
@@ -304,6 +323,15 @@ public class Maze {
             case EAST_ROOM: return new Position(eastX + ROOM_SIZE/2, eastY + ROOM_SIZE/2, 0);
             default: return getStartPosition();
         }
+    }
+
+    // ✨ Getter pour la porte de sortie
+    public Door getExitDoor() {
+        return exitDoor;
+    }
+
+    public Position getExitDoorPosition() {
+        return exitDoor.getPosition();
     }
 
     // Getters

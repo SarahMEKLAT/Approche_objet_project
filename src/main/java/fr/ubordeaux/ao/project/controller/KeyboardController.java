@@ -4,20 +4,33 @@ import fr.ubordeaux.ao.project.model.Game;
 import fr.ubordeaux.ao.project.model.maze.Position;
 import fr.ubordeaux.ao.mazing.api.IWindowGame;
 import fr.ubordeaux.ao.mazing.api.Direction;
+import fr.ubordeaux.ao.project.controller.commands.*;
+import fr.ubordeaux.ao.project.view.GameView;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.util.Stack;
 
+/**
+ * Contrôleur clavier avec Pattern Command
+ */
 public class KeyboardController implements KeyListener {
     private Game game;
-    private IWindowGame window;
+    private GameView view;
 
-    public KeyboardController(Game game, IWindowGame window) {
+    // Historique des commandes (pour undo)
+    private Stack<Command> commandHistory;
+    private static final int MAX_HISTORY = 10;
+
+    public KeyboardController(Game game, GameView view) {
         this.game = game;
-        this.window = window;
+        this.view = view;
+        this.commandHistory = new Stack<>();
 
         // Essayer d'attacher le listener de plusieurs façons
+        IWindowGame window = view.getWindow();
+
         if (window instanceof JFrame) {
             JFrame frame = (JFrame) window;
             frame.addKeyListener(this);
@@ -34,68 +47,117 @@ public class KeyboardController implements KeyListener {
             comp.requestFocus();
         }
 
-        System.out.println("Contrôleur clavier attaché");
+        System.out.println("Contrôleur clavier attaché (avec Pattern Command)");
+    }
+
+    /**
+     * Exécute une commande et l'ajoute à l'historique
+     */
+    private void executeCommand(Command command) {
+        if (command.execute()) {
+            // Mettre à jour la vue après chaque commande réussie
+            view.updatePlayerView();
+
+            // Ajouter à l'historique seulement si la commande a réussi et est undoable
+            if (command.isUndoable()) {
+                commandHistory.push(command);
+
+                // Limiter la taille de l'historique
+                if (commandHistory.size() > MAX_HISTORY) {
+                    commandHistory.remove(0);
+                }
+            }
+        }
+    }
+
+    /**
+     * Annule la dernière commande
+     */
+    private void undoLastCommand() {
+        if (!commandHistory.isEmpty()) {
+            Command lastCommand = commandHistory.pop();
+            lastCommand.undo();
+
+            // Mettre à jour la vue après l'undo
+            view.updatePlayerView();
+
+            System.out.println("⏪ Commande annulée : " + lastCommand.getDescription());
+        } else {
+            System.out.println("⚠️ Aucune commande à annuler");
+        }
     }
 
     @Override
     public void keyPressed(KeyEvent e) {
-        System.out.println("Touche pressée: " + e.getKeyCode());  // DEBUG
+        System.out.println("Touche pressée: " + e.getKeyCode());
 
         if (game.getPlayer() == null) {
             System.out.println("Player est null!");
             return;
         }
 
-        Position currentPos = game.getPlayer().getPosition();
-        Position newPos = currentPos.copy();
-        Direction newDirection = null;
-        boolean moved = false;
+        Command command = null;
 
         switch (e.getKeyCode()) {
+            // Déplacements avec Pattern Command
             case KeyEvent.VK_Z:
             case KeyEvent.VK_UP:
-                newPos.setY(currentPos.getY() - 1);
-                newDirection = Direction.NORTH;
-                moved = true;
+                command = new MoveCommand(game, 0, -1);
+                updateDirection(Direction.NORTH);
                 break;
+
             case KeyEvent.VK_S:
             case KeyEvent.VK_DOWN:
-                newPos.setY(currentPos.getY() + 1);
-                newDirection = Direction.SOUTH;
-                moved = true;
+                command = new MoveCommand(game, 0, 1);
+                updateDirection(Direction.SOUTH);
                 break;
+
             case KeyEvent.VK_Q:
             case KeyEvent.VK_LEFT:
-                newPos.setX(currentPos.getX() - 1);
-                newDirection = Direction.WEST;
-                moved = true;
+                command = new MoveCommand(game, -1, 0);
+                updateDirection(Direction.WEST);
                 break;
+
             case KeyEvent.VK_D:
             case KeyEvent.VK_RIGHT:
-                newPos.setX(currentPos.getX() + 1);
-                newDirection = Direction.EAST;
-                moved = true;
+                command = new MoveCommand(game, 1, 0);
+                updateDirection(Direction.EAST);
                 break;
+
+            // Attaque avec Pattern Command
             case KeyEvent.VK_SPACE:
-                System.out.println("Attaque!");
-                game.getPlayer().attack();
+                command = new AttackCommand(game);
+                break;
+
+            // Undo (touche U)
+            case KeyEvent.VK_U:
+                undoLastCommand();
+                break;
+
+            // Redémarrer (R)
+            case KeyEvent.VK_R:
+                if (game.isGameOver() || game.isVictory()) {
+                    System.out.println("🔄 Redémarrage...");
+                    commandHistory.clear(); // Vider l'historique
+                    game.restart();
+                    view.renderMaze();
+                    view.updatePlayerView();
+                }
                 break;
         }
 
-        if (moved) {
-            System.out.println("Position actuelle: " + currentPos);
-            System.out.println("Tentative de mouvement vers: " + newPos);
-            System.out.println("isInBounds: " + game.getMaze().isInBounds(newPos));
-            System.out.println("isWall: " + game.getMaze().isWall(newPos));
-            if (game.getMaze().isInBounds(newPos) && !game.getMaze().isWall(newPos)) {
-                game.getPlayer().move(newPos);
-                if (newDirection != null) {
-                    game.getPlayer().getCrusader().setDirection(newDirection);
-                }
-                System.out.println("Joueur: " + newPos);
-            } else {
-                System.out.println("Mouvement bloqué (mur ou hors limites)");
-            }
+        // Exécuter la commande si elle existe
+        if (command != null) {
+            executeCommand(command);
+        }
+    }
+
+    /**
+     * Met à jour la direction du personnage graphique
+     */
+    private void updateDirection(Direction direction) {
+        if (game.getPlayer() != null && game.getPlayer().getCrusader() != null) {
+            game.getPlayer().getCrusader().setDirection(direction);
         }
     }
 
@@ -104,4 +166,15 @@ public class KeyboardController implements KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) {}
+
+    /**
+     * Affiche l'historique des commandes (pour debug)
+     */
+    public void printHistory() {
+        System.out.println("📜 Historique des commandes :");
+        for (int i = 0; i < commandHistory.size(); i++) {
+            System.out.println("  " + (i + 1) + ". " +
+                    commandHistory.get(i).getDescription());
+        }
+    }
 }

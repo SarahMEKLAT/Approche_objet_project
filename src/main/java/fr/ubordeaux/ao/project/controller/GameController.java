@@ -2,43 +2,74 @@ package fr.ubordeaux.ao.project.controller;
 
 import fr.ubordeaux.ao.project.model.Game;
 import fr.ubordeaux.ao.project.view.GameView;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 
 /**
  * Contrôleur principal du jeu
- * Gère les inputs clavier et la boucle de jeu
+ * Gère la boucle de jeu et délègue les inputs au KeyboardController
  */
-public class GameController implements KeyListener {
+public class GameController {
     private Game game;
     private GameView view;
+    private KeyboardController keyboardController;
     private Thread spiderThread;
+    private Thread gameLoopThread;
     private volatile boolean running = true;
 
     public GameController(Game game, GameView view) {
         this.game = game;
         this.view = view;
+
+        // Créer le contrôleur clavier avec Pattern Command
+        // IMPORTANT: Passer la view pour qu'elle puisse être mise à jour
+        this.keyboardController = new KeyboardController(game, view);
     }
 
     /**
      * Démarre le contrôleur
      */
     public void start() {
-        // Attacher le listener clavier à la fenêtre
-        ((javax.swing.JFrame) view.getWindow()).addKeyListener(this);
-        ((javax.swing.JFrame) view.getWindow()).setFocusable(true);
-        ((javax.swing.JFrame) view.getWindow()).requestFocus();
+        System.out.println("Contrôleur démarré (avec Pattern Command).");
+        System.out.println("Nouvelles touches :");
+        System.out.println("  U : Annuler le dernier mouvement");
+        System.out.println("  R : Redémarrer après victoire/défaite");
 
-        System.out.println("Contrôleur démarré. Utilisez les flèches pour bouger.");
+        // Thread pour la boucle de jeu principale (60 FPS)
+        gameLoopThread = new Thread(() -> {
+            long lastTime = System.nanoTime();
+            double nsPerTick = 1000000000.0 / 60.0; // 60 FPS
+            double delta = 0;
 
-        // Thread pour déplacer l'araignée automatiquement
+            while (running) {
+                long now = System.nanoTime();
+                delta += (now - lastTime) / nsPerTick;
+                lastTime = now;
+
+                if (delta >= 1) {
+                    float deltaTime = (float) delta / 60.0f;
+                    game.update(deltaTime);
+                    delta = 0;
+                }
+
+                try {
+                    Thread.sleep(2);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        });
+        gameLoopThread.start();
+
+        // Thread pour déplacer TOUTES les araignées automatiquement
         spiderThread = new Thread(() -> {
             while (running) {
                 try {
-                    Thread.sleep(1000); // Toutes les secondes
+                    Thread.sleep(500); // Toutes les 0.5 secondes
                     if (game.isPlaying()) {
-                        game.moveSpider();
-                        view.updateSpiderView();
+                        // Mettre à jour l'IA de toutes les araignées
+                        game.updateSpiders(0.5f);
+
+                        // Mettre à jour la vue
+                        view.updateSpidersView();
                     }
                 } catch (InterruptedException e) {
                     break;
@@ -56,73 +87,15 @@ public class GameController implements KeyListener {
         if (spiderThread != null) {
             spiderThread.interrupt();
         }
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-        boolean moved = false;
-
-        switch (e.getKeyCode()) {
-            // Déplacement
-            case KeyEvent.VK_UP:
-            case KeyEvent.VK_Z:
-                moved = game.movePlayer(0, -1);
-                break;
-
-            case KeyEvent.VK_DOWN:
-            case KeyEvent.VK_S:
-                moved = game.movePlayer(0, 1);
-                break;
-
-            case KeyEvent.VK_LEFT:
-            case KeyEvent.VK_Q:
-                moved = game.movePlayer(-1, 0);
-                break;
-
-            case KeyEvent.VK_RIGHT:
-            case KeyEvent.VK_D:
-                moved = game.movePlayer(1, 0);
-                break;
-
-            // Attaque
-            case KeyEvent.VK_SPACE:
-                if (game.isPlaying()) {
-                    System.out.println("⚔️ Attaque !");
-                    game.getPlayer().attack();
-                }
-                break;
-
-            // Redémarrer (R)
-            case KeyEvent.VK_R:
-                if (game.isGameOver() || game.isVictory()) {
-                    System.out.println("🔄 Redémarrage du jeu...");
-                    game.restart();
-                    view.renderMaze();
-                    view.updatePlayerView();
-                }
-                break;
-
-            // Quitter (ESC)
-            case KeyEvent.VK_ESCAPE:
-                System.out.println("Sortie du jeu...");
-                stop();
-                System.exit(0);
-                break;
-        }
-
-        // Si le joueur a bougé, rafraîchir la vue (caméra suit)
-        if (moved) {
-            view.updatePlayerView();
+        if (gameLoopThread != null) {
+            gameLoopThread.interrupt();
         }
     }
 
-    @Override
-    public void keyReleased(KeyEvent e) {
-        // Rien pour l'instant
-    }
-
-    @Override
-    public void keyTyped(KeyEvent e) {
-        // Rien pour l'instant
+    /**
+     * Donne accès au KeyboardController pour des fonctionnalités avancées
+     */
+    public KeyboardController getKeyboardController() {
+        return keyboardController;
     }
 }
