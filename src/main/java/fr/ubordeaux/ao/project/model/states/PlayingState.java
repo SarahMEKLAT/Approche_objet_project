@@ -1,12 +1,11 @@
 package fr.ubordeaux.ao.project.model.states;
 
-
-
 import fr.ubordeaux.ao.project.model.Game;
 
 /**
  * État quand le jeu est en cours
-
+ * Pattern: State
+ */
 public class PlayingState implements GameState {
     private Game game;
 
@@ -16,7 +15,7 @@ public class PlayingState implements GameState {
 
     @Override
     public void enter() {
-        System.out.println(">>> État: EN JEU");
+        System.out.println("🎮 >>> État: EN JEU");
     }
 
     @Override
@@ -26,7 +25,7 @@ public class PlayingState implements GameState {
             game.getPlayer().update(deltaTime);
         }
 
-        // TODO: Mise à jour des araignées
+        // TODO: Mise à jour des araignées (plus tard)
 
         // Vérifier les conditions de fin
         game.checkVictoryCondition();
@@ -43,4 +42,3 @@ public class PlayingState implements GameState {
         return "PLAYING";
     }
 }
- */

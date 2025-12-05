@@ -36,8 +36,10 @@ public class GameController implements KeyListener {
             while (running) {
                 try {
                     Thread.sleep(1000); // Toutes les secondes
-                    game.moveSpider();
-                    view.updateSpiderView();
+                    if (game.isPlaying()) {
+                        game.moveSpider();
+                        view.updateSpiderView();
+                    }
                 } catch (InterruptedException e) {
                     break;
                 }
@@ -61,6 +63,7 @@ public class GameController implements KeyListener {
         boolean moved = false;
 
         switch (e.getKeyCode()) {
+            // Déplacement
             case KeyEvent.VK_UP:
             case KeyEvent.VK_Z:
                 moved = game.movePlayer(0, -1);
@@ -81,11 +84,25 @@ public class GameController implements KeyListener {
                 moved = game.movePlayer(1, 0);
                 break;
 
+            // Attaque
             case KeyEvent.VK_SPACE:
-                System.out.println("⚔️ Attaque !");
-                game.getPlayer().attack();
+                if (game.isPlaying()) {
+                    System.out.println("⚔️ Attaque !");
+                    game.getPlayer().attack();
+                }
                 break;
 
+            // Redémarrer (R)
+            case KeyEvent.VK_R:
+                if (game.isGameOver() || game.isVictory()) {
+                    System.out.println("🔄 Redémarrage du jeu...");
+                    game.restart();
+                    view.renderMaze();
+                    view.updatePlayerView();
+                }
+                break;
+
+            // Quitter (ESC)
             case KeyEvent.VK_ESCAPE:
                 System.out.println("Sortie du jeu...");
                 stop();

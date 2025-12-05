@@ -5,11 +5,8 @@ import fr.ubordeaux.ao.mazing.api.WindowGame;
 import fr.ubordeaux.ao.mazing.api.Crusader;
 import fr.ubordeaux.ao.mazing.api.Spider;
 import fr.ubordeaux.ao.project.model.Game;
+import fr.ubordeaux.ao.project.model.maze.Position;
 
-/**
- * Vue du jeu avec Mazing
- * Version simple et fonctionnelle
- */
 public class GameView {
     private IWindowGame window;
     private Game game;
@@ -20,15 +17,31 @@ public class GameView {
         this.window = new WindowGame();
         this.game = game;
 
-        // Tuiles plus petites pour voir plus de labyrinthe
-        window.setTileSize(70);
+        // Tuiles de taille raisonnable pour voir tout le labyrinthe
+        window.setTileSize(60);
+
+        // 🎯 CENTRER LE LABYRINTHE
+        // Le labyrinthe fait ~32x32 tuiles
+        // On veut le centrer dans la fenêtre
+        int mazeWidth = game.getMaze().getTotalWidth();
+        int mazeHeight = game.getMaze().getTotalHeight();
+
+        // Calculer le décalage pour centrer (valeurs négatives = décaler vers le haut/gauche)
+        // Formule : on veut que le centre du labyrinthe soit au centre de l'écran
+        int scrollX = -6;
+        int scrollY = -9;
+
+        window.scroll(scrollX, scrollY);
+
+        System.out.println("📐 Scroll appliqué : (" + scrollX + ", " + scrollY + ")");
 
         // Créer le personnage du joueur
         crusader = new Crusader();
+        Position startPos = game.getPlayer().getPosition();
         crusader.setPosition(
-                game.getPlayer().getPosition().getX(),
-                game.getPlayer().getPosition().getY(),
-                game.getPlayer().getPosition().getZ()
+                startPos.getX(),
+                startPos.getY(),
+                startPos.getZ()
         );
 
         // Créer l'araignée visuelle
@@ -54,11 +67,7 @@ public class GameView {
         return window;
     }
 
-    /**
-     * Affiche le labyrinthe complet
-     */
     public void renderMaze() {
-        // Utiliser la méthode render() du Maze (plus efficace)
         game.getMaze().render(window);
 
         System.out.println("Labyrinthe affiché : " +
@@ -70,16 +79,18 @@ public class GameView {
      * Met à jour la position du joueur à l'écran
      */
     public void updatePlayerView() {
+        Position currentPos = game.getPlayer().getPosition();
+
+        // Mettre à jour simplement la position du crusader
         crusader.setPosition(
-                game.getPlayer().getPosition().getX(),
-                game.getPlayer().getPosition().getY(),
-                game.getPlayer().getPosition().getZ()
+                currentPos.getX(),
+                currentPos.getY(),
+                currentPos.getZ()
         );
+
+        // Pas de scroll dynamique - tout est visible !
     }
 
-    /**
-     * Met à jour la position de l'araignée à l'écran
-     */
     public void updateSpiderView() {
         spiderView.setPosition(
                 game.getSpider().getPosition().getX(),
