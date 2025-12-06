@@ -93,6 +93,21 @@ public class GameView {
     }
 
     /**
+     * ✨ NOUVEAU : Rafraîchit l'affichage du labyrinthe (pour masquer les fragments collectés)
+     */
+    public void refreshMaze() {
+        // Nettoyer la fenêtre et redessiner le labyrinthe
+        window.clear();
+        renderMaze();
+
+        // Ré-ajouter le crusader et les araignées
+        window.add(crusader);
+        for (Spider spiderView : spiderViews.values()) {
+            window.add(spiderView);
+        }
+    }
+
+    /**
      * Met à jour la position du joueur à l'écran
      */
     public void updatePlayerView() {

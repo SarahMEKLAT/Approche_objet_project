@@ -2,6 +2,7 @@ package fr.ubordeaux.ao.project.model.maze;
 
 import fr.ubordeaux.ao.project.model.items.Item;
 import fr.ubordeaux.ao.project.model.items.Door;
+import fr.ubordeaux.ao.project.model.items.KeyFragment;
 import fr.ubordeaux.ao.mazing.api.IWindowGame;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,12 @@ public class Maze {
 
     // ✨ Porte de sortie (objet Door)
     private Door exitDoor;
+
+    // ✨ Liste des KeyFragments (code 550)
+    private List<KeyFragment> keyFragments;
+
+    // ✨ Obstacles bloquants
+    private List<Obstacle> obstacles;
 
     // Taille d'une salle (10x10)
     private static final int ROOM_SIZE = 10;
@@ -44,6 +51,23 @@ public class Maze {
     private static final int DOOR_N = 114;      // Porte verticale
     private static final int DOOR_W = 112;
     private static final int DOOR_E = 115;      // Porte verticale
+
+    // ✨ Codes Table 500 - TOUS BLOQUANTS
+    private static final int OBJ_500 = 500;
+    private static final int OBJ_504 = 504;
+    private static final int OBJ_505 = 505;
+    private static final int OBJ_506 = 506;
+    private static final int OBJ_527 = 527;
+    private static final int OBJ_532 = 532;
+    private static final int OBJ_556 = 556;
+    private static final int OBJ_557 = 557;
+    private static final int OBJ_558 = 558;
+
+    // ✨ Codes pour entourer les KeyFragments (décoration)
+    private static final int DECO_412 = 412;
+    private static final int DECO_413 = 413;
+    private static final int DECO_414 = 414;
+    private static final int DECO_415 = 415;
 
     // Positions des salles
     private int centerX, centerY;
@@ -73,6 +97,8 @@ public class Maze {
         this.totalWidth = ROOM_SIZE * 3 + 2;  // 3 salles + 2 espaces
         this.totalHeight = ROOM_SIZE * 3 + 2;
         this.items = new ArrayList<>();
+        this.keyFragments = new ArrayList<>();
+        this.obstacles = new ArrayList<>();
 
         // ✨ Créer la porte de sortie au fond de la salle Sud
         Position exitPos = new Position(
@@ -81,10 +107,101 @@ public class Maze {
                 0
         );
         exitDoor = new Door(exitPos);
-        exitDoor.setRequiredFragments(0); // Pas de fragments requis pour l'instant
+        exitDoor.setRequiredFragments(3); // ✨ Il faut 3 fragments maintenant !
+
+        // ✨ Placer les 3 KeyFragments (Nord, Est, Ouest)
+        spawnKeyFragments();
+
+        // ✨ Placer les obstacles BLOQUANTS de la table 500
+        spawnObstacles();
 
         System.out.println("Labyrinthe créé : " + totalWidth + "x" + totalHeight + " tuiles");
         System.out.println("🚪 Porte de sortie placée en : " + exitPos);
+        System.out.println("🗝️ " + keyFragments.size() + " fragments de clé placés (code 550)");
+        System.out.println("🪨 " + obstacles.size() + " obstacles BLOQUANTS placés (table 500)");
+    }
+
+    /**
+     * ✨ Place les 3 KeyFragments (code 550) dans les salles Nord, Est, Ouest
+     * ENTOURÉS de décorations 412, 413, 414, 415 pour les mettre en valeur
+     */
+    private void spawnKeyFragments() {
+        // Fragment 1 : Salle Nord (centre)
+        int northFragX = northX + ROOM_SIZE / 2;
+        int northFragY = northY + ROOM_SIZE / 2;
+        Position northFragPos = new Position(northFragX, northFragY, 0);
+        KeyFragment northFrag = new KeyFragment(northFragPos, 1);
+        keyFragments.add(northFrag);
+        items.add(northFrag);
+
+        // Fragment 2 : Salle Est (centre)
+        int eastFragX = eastX + ROOM_SIZE / 2;
+        int eastFragY = eastY + ROOM_SIZE / 2;
+        Position eastFragPos = new Position(eastFragX, eastFragY, 0);
+        KeyFragment eastFrag = new KeyFragment(eastFragPos, 2);
+        keyFragments.add(eastFrag);
+        items.add(eastFrag);
+
+        // Fragment 3 : Salle Ouest (centre)
+        int westFragX = westX + ROOM_SIZE / 2;
+        int westFragY = westY + ROOM_SIZE / 2;
+        Position westFragPos = new Position(westFragX, westFragY, 0);
+        KeyFragment westFrag = new KeyFragment(westFragPos, 3);
+        keyFragments.add(westFrag);
+        items.add(westFrag);
+
+        System.out.println("🗝️ Fragment 1 (Nord) placé en : " + northFragPos);
+        System.out.println("🗝️ Fragment 2 (Est) placé en : " + eastFragPos);
+        System.out.println("🗝️ Fragment 3 (Ouest) placé en : " + westFragPos);
+    }
+
+    /**
+     * ✨ Place des obstacles BLOQUANTS de la table 500 dans les salles
+     * TOUS sont bloquants (blocking = true)
+     */
+    private void spawnObstacles() {
+        // SALLE CENTRE : Mix varié - TOUS BLOQUANTS
+        addObstacle(centerX + 2, centerY + 2, OBJ_500);
+        addObstacle(centerX + 7, centerY + 3, OBJ_504);
+        addObstacle(centerX + 3, centerY + 7, OBJ_556);
+        addObstacle(centerX + 8, centerY + 8, OBJ_557);
+
+        // SALLE NORD : Obstacles symétriques - TOUS BLOQUANTS
+        addObstacle(northX + 2, northY + 2, OBJ_505);
+        addObstacle(northX + 7, northY + 2, OBJ_505);
+        addObstacle(northX + 2, northY + 7, OBJ_506);
+        addObstacle(northX + 7, northY + 7, OBJ_506);
+        // Pas d'obstacle au centre (réservé pour le fragment + décoration)
+
+        // SALLE EST : Plus d'obstacles - TOUS BLOQUANTS
+        addObstacle(eastX + 2, eastY + 3, OBJ_527);
+        addObstacle(eastX + 2, eastY + 6, OBJ_527);
+        addObstacle(eastX + 7, eastY + 4, OBJ_532);
+        addObstacle(eastX + 8, eastY + 7, OBJ_500);
+        // Pas d'obstacle au centre (réservé pour le fragment + décoration)
+
+        // SALLE OUEST : Mix équilibré - TOUS BLOQUANTS
+        addObstacle(westX + 3, westY + 3, OBJ_504);
+        addObstacle(westX + 2, westY + 7, OBJ_557);
+        // Pas d'obstacle au centre (réservé pour le fragment + décoration)
+
+        // SALLE SUD : Zone de boss - Beaucoup d'obstacles - TOUS BLOQUANTS
+        addObstacle(southX + 2, southY + 2, OBJ_532);
+        addObstacle(southX + 7, southY + 2, OBJ_532);
+        addObstacle(southX + 2, southY + 7, OBJ_527);
+        addObstacle(southX + 7, southY + 7, OBJ_527);
+        addObstacle(southX + 4, southY + 4, OBJ_500);
+        addObstacle(southX + 3, southY + 6, OBJ_556);
+        addObstacle(southX + 6, southY + 6, OBJ_557);
+        addObstacle(southX + 5, southY + 3, OBJ_558);
+    }
+
+    /**
+     * ✨ Ajoute un obstacle BLOQUANT à la liste
+     * Par défaut, tous les obstacles bloquent maintenant
+     */
+    private void addObstacle(int x, int y, int code) {
+        obstacles.add(new Obstacle(new Position(x, y, 0), code, "Obj" + code, true));
     }
 
     /**
@@ -122,12 +239,45 @@ public class Maze {
         // 4. AJOUTER LES MURS DES COULOIRS
         createCorridorWalls(window);
 
-        // ✨ 5. PLACER LA PORTE DE SORTIE (utilise le code de la classe Door)
+        // ✨ 5. PLACER LES OBSTACLES BLOQUANTS (table 500)
+        for (Obstacle obstacle : obstacles) {
+            Position pos = obstacle.getPosition();
+            window.add(obstacle.getCode(),
+                    (int)pos.getX(),
+                    (int)pos.getY(),
+                    (int)pos.getZ());
+        }
+
+        // ✨ 6. PLACER LA PORTE DE SORTIE
         Position doorPos = exitDoor.getPosition();
         window.add(exitDoor.getCode(),
                 (int)doorPos.getX(),
                 (int)doorPos.getY(),
                 (int)doorPos.getZ());
+
+        // ✨ 7. PLACER LES KEY FRAGMENTS (code 550) AVEC DÉCORATIONS AUTOUR
+        for (KeyFragment fragment : keyFragments) {
+            if (!fragment.isCollected()) {
+                Position fragPos = fragment.getPosition();
+                int fragX = (int)fragPos.getX();
+                int fragY = (int)fragPos.getY();
+
+                // Placer les décorations autour (412, 413, 414, 415)
+                // Pattern en croix autour du fragment:
+                //     414
+                // 412 [550] 415
+                //     413
+                // Placer le fragment au centre (par-dessus les décorations)
+                window.add(fragment.getCode(), fragX, fragY, 0);
+                window.add(DECO_414, fragX, fragY , 0);  // Haut
+                window.add(DECO_412, fragX, fragY, 0);  // Gauche
+
+                window.add(DECO_413, fragX, fragY , 0);  // Bas
+                window.add(DECO_415, fragX , fragY, 0);  // Droite
+
+
+            }
+        }
     }
 
     /**
@@ -235,9 +385,16 @@ public class Maze {
     }
 
     /**
-     * Vérifie si une position est un mur (pour les collisions)
+     * ✨ Vérifie si une position est un mur OU un obstacle bloquant
      */
     public boolean isWall(int x, int y) {
+        // Vérifier d'abord les obstacles bloquants
+        for (Obstacle obstacle : obstacles) {
+            if (obstacle.isBlocking() && obstacle.isAt(x, y)) {
+                return true; // C'est un obstacle physique
+            }
+        }
+
         // Vérifier si c'est dans une salle
         if (isInRoom(x, y, centerX, centerY) ||
                 isInRoom(x, y, northX, northY) ||
@@ -300,7 +457,7 @@ public class Maze {
         return isInBounds((int)pos.getX(), (int)pos.getY());
     }
 
-    // ✨ Vérifie si le joueur est à la porte de sortie (utilise la méthode de Door)
+    // ✨ Vérifie si le joueur est à la porte de sortie
     public boolean isAtExitDoor(Position playerPos) {
         return exitDoor.getPosition().distanceTo(playerPos) < 0.5f;
     }
@@ -325,16 +482,11 @@ public class Maze {
         }
     }
 
-    // ✨ Getter pour la porte de sortie
-    public Door getExitDoor() {
-        return exitDoor;
-    }
-
-    public Position getExitDoorPosition() {
-        return exitDoor.getPosition();
-    }
-
     // Getters
+    public Door getExitDoor() { return exitDoor; }
+    public Position getExitDoorPosition() { return exitDoor.getPosition(); }
+    public List<KeyFragment> getKeyFragments() { return keyFragments; }
+    public List<Obstacle> getObstacles() { return obstacles; }
     public int getTotalWidth() { return totalWidth; }
     public int getTotalHeight() { return totalHeight; }
     public List<Item> getItems() { return items; }

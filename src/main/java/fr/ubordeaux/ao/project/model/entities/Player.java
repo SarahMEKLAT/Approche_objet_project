@@ -117,17 +117,33 @@ public class Player extends Observable {
      */
     public void collectKeyFragment() {
         keyFragments++;
+        System.out.println("🔑 Fragment collecté ! Total: " + keyFragments + "/3");
         setChanged();
         notifyObservers("KEY_COLLECTED");
     }
 
     /**
-     * Utilise une potion
+     * Utilise une potion de vie
      */
     public void useHealthPotion(int healAmount) {
+        int oldHealth = getHealth();
         entity.heal(healAmount);
+        int healed = getHealth() - oldHealth;
+        System.out.println("💖 +" + healed + " PV ! (Vie: " + getHealth() + "/" + MAX_HEALTH + ")");
         setChanged();
         notifyObservers("HEALTH_CHANGED");
+    }
+
+    /**
+     * ✨ NOUVEAU : Utilise une potion d'endurance
+     */
+    public void useStaminaPotion(int amount) {
+        int oldStamina = stamina;
+        stamina = Math.min(maxStamina, stamina + amount);
+        int restored = stamina - oldStamina;
+        System.out.println("💙 +" + restored + " Stamina ! (Stamina: " + stamina + "/" + maxStamina + ")");
+        setChanged();
+        notifyObservers("STAMINA_CHANGED");
     }
 
     /**

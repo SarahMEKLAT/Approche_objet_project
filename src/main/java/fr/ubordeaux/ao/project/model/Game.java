@@ -4,6 +4,7 @@ import fr.ubordeaux.ao.project.model.maze.Maze;
 import fr.ubordeaux.ao.project.model.maze.Position;
 import fr.ubordeaux.ao.project.model.entities.Player;
 import fr.ubordeaux.ao.project.model.entities.Spider;
+import fr.ubordeaux.ao.project.model.items.KeyFragment;
 import fr.ubordeaux.ao.project.model.states.*;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -109,9 +110,30 @@ public class Game {
 
         if (maze.isInBounds(newPos) && !maze.isWall(newPos)) {
             player.move(newPos);
+
+            // ✨ Vérifier la collecte automatique des KeyFragments après chaque mouvement
+            checkItemCollection();
+
             return true;
         }
         return false;
+    }
+
+    /**
+     * ✨ NOUVEAU : Vérifie et collecte automatiquement les KeyFragments proches
+     */
+    private void checkItemCollection() {
+        Position playerPos = player.getPosition();
+
+        // Parcourir tous les KeyFragments
+        for (KeyFragment fragment : maze.getKeyFragments()) {
+            // Si pas encore collecté ET proche du joueur (distance < 1.0 tuile)
+            if (fragment.canCollect(playerPos)) {
+                fragment.collect();              // Marquer comme collecté
+                player.collectKeyFragment();     // Ajouter au compteur du joueur
+                addScore(100);                   // Bonus de 100 points
+            }
+        }
     }
 
     public void updateSpiders(float deltaTime) {
@@ -147,7 +169,7 @@ public class Game {
     }
 
     /**
-     * ✨ Victoire AUTOMATIQUE : s'approcher de la porte suffit !
+     * ✨ Victoire AUTOMATIQUE : toucher la porte (si 3 fragments collectés)
      */
     public void checkVictoryCondition() {
         if (!(currentState instanceof PlayingState)) {
@@ -156,7 +178,7 @@ public class Game {
 
         // Vérifier si le joueur est proche de la porte
         if (maze.isAtExitDoor(player.getPosition())) {
-            // Essayer d'ouvrir la porte (automatique, pas besoin de touche E)
+            // Essayer d'ouvrir la porte (vérifie automatiquement le nombre de fragments)
             if (maze.getExitDoor().tryOpen(player.getKeyFragments())) {
                 System.out.println("🚪 Vous avez atteint la porte de sortie !");
                 changeState(victoryState);

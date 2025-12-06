@@ -124,11 +124,6 @@ public class KeyboardController implements KeyListener {
                 updateDirection(Direction.EAST);
                 break;
 
-            // Attaque avec Pattern Command
-            case KeyEvent.VK_SPACE:
-                command = new AttackCommand(game);
-                break;
-
             // Undo (touche U)
             case KeyEvent.VK_U:
                 undoLastCommand();
