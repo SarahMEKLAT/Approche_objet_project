@@ -154,18 +154,6 @@ public class Player extends Observable {
     }
 
     /**
-     * ✨ NOUVEAU : Utilise une potion d'endurance
-     */
-    public void useStaminaPotion(int amount) {
-        int oldStamina = stamina;
-        stamina = Math.min(maxStamina, stamina + amount);
-        int restored = stamina - oldStamina;
-        System.out.println("💙 +" + restored + " Stamina ! (Stamina: " + stamina + "/" + maxStamina + ")");
-        setChanged();
-        notifyObservers("STAMINA_CHANGED");
-    }
-
-    /**
      * Mise à jour du joueur (chaque frame)
      */
     public void update(float deltaTime) {
