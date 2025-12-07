@@ -23,6 +23,12 @@ public class KeyboardController implements KeyListener {
     private Stack<Command> commandHistory;
     private static final int MAX_HISTORY = 10;
 
+    // Variables pour déplacement continu
+    private Thread movementThread;
+    private volatile boolean isMoving = false;
+    private volatile int currentDx = 0;
+    private volatile int currentDy = 0;
+
     public KeyboardController(Game game, GameView view) {
         this.game = game;
         this.view = view;
@@ -96,32 +102,26 @@ public class KeyboardController implements KeyListener {
             return;
         }
 
-        Command command = null;
-
         switch (e.getKeyCode()) {
-            // Déplacements avec Pattern Command
+            // Déplacements avec mouvement continu
             case KeyEvent.VK_Z:
             case KeyEvent.VK_UP:
-                command = new MoveCommand(game, 0, -1);
-                updateDirection(Direction.NORTH);
+                startContinuousMovement(0, -1, Direction.NORTH);
                 break;
 
             case KeyEvent.VK_S:
             case KeyEvent.VK_DOWN:
-                command = new MoveCommand(game, 0, 1);
-                updateDirection(Direction.SOUTH);
+                startContinuousMovement(0, 1, Direction.SOUTH);
                 break;
 
             case KeyEvent.VK_Q:
             case KeyEvent.VK_LEFT:
-                command = new MoveCommand(game, -1, 0);
-                updateDirection(Direction.WEST);
+                startContinuousMovement(-1, 0, Direction.WEST);
                 break;
 
             case KeyEvent.VK_D:
             case KeyEvent.VK_RIGHT:
-                command = new MoveCommand(game, 1, 0);
-                updateDirection(Direction.EAST);
+                startContinuousMovement(1, 0, Direction.EAST);
                 break;
 
             // Undo (touche U)
@@ -139,11 +139,6 @@ public class KeyboardController implements KeyListener {
                     view.updatePlayerView();
                 }
                 break;
-        }
-
-        // Exécuter la commande si elle existe
-        if (command != null) {
-            executeCommand(command);
         }
     }
 
@@ -171,5 +166,48 @@ public class KeyboardController implements KeyListener {
             System.out.println("  " + (i + 1) + ". " +
                     commandHistory.get(i).getDescription());
         }
+    }
+
+    // Méthode pour démarrer le mouvement continu
+    private void startContinuousMovement(int dx, int dy, Direction direction) {
+        // Arrêter le mouvement précédent
+        stopContinuousMovement();
+
+        currentDx = dx;
+        currentDy = dy;
+        isMoving = true;
+
+        // Activer la course
+        game.getPlayer().setRunning(true);
+        game.getPlayer().setVisualDirection(currentDx, currentDy); // MODIFICATION ICI
+
+        movementThread = new Thread(() -> {
+            while (isMoving) {
+                try {
+                    Command command = new MoveCommand(game, currentDx, currentDy);
+                    if (command.execute()) {
+                        view.updatePlayerView();
+                    } else {
+                        // Bloqué par un mur
+                        System.out.println("Bloqué par un mur");
+                    }
+
+                    Thread.sleep(200);
+                } catch (InterruptedException e) {
+                    break;
+                }
+            }
+        });
+        movementThread.start();
+    }
+
+    //  Méthode pour arrêter le mouvement continu
+    private void stopContinuousMovement() {
+        isMoving = false;
+        if (movementThread != null) {
+            movementThread.interrupt();
+            movementThread = null;
+        }
+        game.getPlayer().setRunning(false);
     }
 }

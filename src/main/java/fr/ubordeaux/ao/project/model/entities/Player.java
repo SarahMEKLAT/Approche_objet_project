@@ -62,11 +62,30 @@ public class Player extends Observable {
     }
 
     /**
-     * Déplace le joueur
+     * Déplace le joueur (sans direction - pour compatibilité)
      */
     public void move(Position newPosition) {
         entity.setPosition(newPosition);
         crusader.setPosition(newPosition.getX(), newPosition.getY(), newPosition.getZ());
+
+        // Animation
+        if (isRunning) {
+            crusader.setMode(Crusader.Mode.RUN);
+        } else {
+            crusader.setMode(Crusader.Mode.WALK);
+        }
+
+        notifyObservers();
+    }
+    /**
+     * Déplace le joueur
+     */
+    public void move(Position newPosition, int dx, int dy) {
+        entity.setPosition(newPosition);
+        crusader.setPosition(newPosition.getX(), newPosition.getY(), newPosition.getZ());
+
+        // Définir la direction
+        setVisualDirection(dx, dy);
 
         // Animation
         if (isRunning) {
@@ -172,6 +191,29 @@ public class Player extends Observable {
 
         setChanged();
         notifyObservers();
+    }
+    /**
+     *  Définit la direction visuelle du Crusader
+     */
+    public void setVisualDirection(int dx, int dy) {
+        fr.ubordeaux.ao.mazing.api.Direction dir = null;
+
+        // Déterminer la direction selon dx et dy
+        if (dx > 0) {
+            dir = fr.ubordeaux.ao.mazing.api.Direction.EAST;
+        } else if (dx < 0) {
+            dir = fr.ubordeaux.ao.mazing.api.Direction.WEST;
+        } else if (dy > 0) {
+            dir = fr.ubordeaux.ao.mazing.api.Direction.SOUTH;
+        } else if (dy < 0) {
+            dir = fr.ubordeaux.ao.mazing.api.Direction.NORTH;
+        }
+
+        // Appliquer la direction si elle est définie
+        if (dir != null) {
+            crusader.setDirection(dir);
+            System.out.println("Direction changée vers: " + dir);
+        }
     }
 
     /**

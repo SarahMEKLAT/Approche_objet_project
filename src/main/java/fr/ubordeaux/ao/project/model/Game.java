@@ -109,9 +109,9 @@ public class Game {
         );
 
         if (maze.isInBounds(newPos) && !maze.isWall(newPos)) {
-            player.move(newPos);
+            player.move(newPos, dx, dy);
 
-            // ✨ Vérifier la collecte automatique des KeyFragments après chaque mouvement
+            //  Vérifier la collecte automatique des KeyFragments après chaque mouvement
             checkItemCollection();
 
             return true;
