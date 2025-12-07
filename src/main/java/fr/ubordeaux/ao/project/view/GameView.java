@@ -6,6 +6,7 @@ import fr.ubordeaux.ao.mazing.api.Crusader;
 import fr.ubordeaux.ao.mazing.api.Spider;
 import fr.ubordeaux.ao.project.model.Game;
 import fr.ubordeaux.ao.project.model.maze.Position;
+import javax.swing.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -14,6 +15,7 @@ public class GameView {
     private IWindowGame window;
     private Game game;
     private Crusader crusader;
+    private HUDPanel hudPanel; // ===== AJOUT =====
 
     // Map pour associer chaque araignée du modèle à sa vue
     private Map<UUID, Spider> spiderViews;
@@ -58,6 +60,19 @@ public class GameView {
 
         // Afficher le labyrinthe
         renderMaze();
+
+        // ===== AJOUT : HUDPanel =====
+        if (window instanceof javax.swing.JFrame) {
+            JFrame frame = (JFrame) window;
+            hudPanel = new HUDPanel(game);
+            hudPanel.setBounds(0, 0, frame.getWidth(), frame.getHeight());
+
+            JLayeredPane layeredPane = frame.getLayeredPane();
+            layeredPane.add(hudPanel, JLayeredPane.PALETTE_LAYER);
+
+            System.out.println("✅ HUDPanel ajouté");
+        }
+        // ===== FIN AJOUT =====
 
         // Afficher la fenêtre
         window.setVisible(true);
@@ -120,6 +135,10 @@ public class GameView {
                 currentPos.getZ()
         );
 
+        // ===== AJOUT : Rafraîchir le HUD =====
+        refreshHUD();
+        // ===== FIN AJOUT =====
+
         // Pas de scroll dynamique - tout est visible !
     }
 
@@ -143,4 +162,15 @@ public class GameView {
             }
         }
     }
+
+    // ===== AJOUT : Méthode pour rafraîchir le HUD =====
+    /**
+     * Rafraîchit le HUD
+     */
+    public void refreshHUD() {
+        if (hudPanel != null) {
+            hudPanel.refresh();
+        }
+    }
+    // ===== FIN AJOUT =====
 }
